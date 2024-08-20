@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
+import statisticsservice.domain.statistics.service.RevenueService;
 import statisticsservice.external.board.client.BoardServiceClient;
 import statisticsservice.external.board.dto.BoardStatisticListResponse;
 import statisticsservice.global.dto.PageDto;
@@ -35,6 +36,8 @@ public class DailyStatsBatch {
     private final BoardServiceClient boardServiceClient;
 
     private final DailyStatsRepository dailyStatsRepository;
+
+    private final RevenueService revenueService;
 
     @Bean
     public Job dailyStatsBatchJob() {
@@ -101,6 +104,10 @@ public class DailyStatsBatch {
                 playtime = item.getTotalPlaytime() - beforeDailyStats.getTotalPlaytime();
             }
 
+            double videoRevenue = revenueService.calculateVideoRevenue(item.getViews(), views);
+            double adVideoRevenue = revenueService.calculateAdVideoRevenue(item.getAdViews(), adViews);
+
+
             return DailyStats.builder()
                     .accountId(item.getAccountId())
                     .boardId(item.getBoardId())
@@ -110,6 +117,9 @@ public class DailyStatsBatch {
                     .totalAdViews(item.getAdViews())
                     .playtime(playtime)
                     .totalPlaytime(item.getTotalPlaytime())
+                    .videoRevenue(videoRevenue)
+                    .adVideoRevenue(adVideoRevenue)
+                    .revenue(videoRevenue + adVideoRevenue)
                     .date(currentDate)
                     .build();
         };

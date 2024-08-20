@@ -39,5 +39,11 @@ public class DailyStats {
 
     private long totalPlaytime;
 
+    private double videoRevenue;
+
+    private double adVideoRevenue;
+
+    private double revenue;
+
     private LocalDate date;
 }
