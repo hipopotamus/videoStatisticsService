@@ -8,14 +8,15 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
+
+import java.time.LocalDate;
 
 @Entity
 @Getter
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class DailStats {
+public class DailyStats {
 
     @Id
     @GeneratedValue
@@ -28,11 +29,15 @@ public class DailStats {
 
     private long views;
 
+    private long totalViews;
+
     private long adViews;
 
-    private long totalViews;
+    private long totalAdViews;
 
     private long playtime;
 
     private long totalPlaytime;
+
+    private LocalDate date;
 }

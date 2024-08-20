@@ -8,17 +8,21 @@ import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.PlatformTransactionManager;
-import statisticsservice.domain.dailyStats.entity.DailStats;
+import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.external.board.client.BoardServiceClient;
 import statisticsservice.external.board.dto.BoardStatisticListResponse;
 import statisticsservice.global.dto.PageDto;
 
+import java.time.LocalDate;
+import java.util.Date;
 import java.util.Iterator;
+import java.util.Optional;
 
 @Configuration
 @RequiredArgsConstructor
@@ -42,16 +46,16 @@ public class DailyStatsBatch {
     @Bean
     public Step dailyStatsBatchStep() {
         return new StepBuilder("dailyStatsBatchStep", jobRepository)
-                .<BoardStatisticListResponse, DailStats>chunk(100, platformTransactionManager)
-                .reader(boardStatisticsItemReader())
-                .processor(boardStatisticsItemProcessor())
+                .<BoardStatisticListResponse, DailyStats>chunk(100, platformTransactionManager)
+                .reader(boardStatisticsItemReader(null))
+                .processor(boardStatisticsItemProcessor(null))
                 .writer(dailyStatsItemWriter())
                 .build();
     }
 
     @Bean
     @StepScope
-    public ItemReader<BoardStatisticListResponse> boardStatisticsItemReader() {
+    public ItemReader<BoardStatisticListResponse> boardStatisticsItemReader(@Value("#{jobParameters['date']}") LocalDate currentDate) {
         return new ItemReader<>() {
 
             private Iterator<BoardStatisticListResponse> currentIterator;
@@ -75,17 +79,45 @@ public class DailyStatsBatch {
 
     @Bean
     @StepScope
-    public ItemProcessor<BoardStatisticListResponse, DailStats> boardStatisticsItemProcessor() {
-        return item -> DailStats.builder()
-                .boardId(item.getBoardId())
-                .totalViews(item.getViews())
-                .totalPlaytime(item.getTotalPlaytime())
-                .build();
+    public ItemProcessor<BoardStatisticListResponse, DailyStats> boardStatisticsItemProcessor(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+
+        return item -> {
+
+            long views = 0;
+            long adViews = 0;
+            long playtime = 0;
+
+            Optional<DailyStats> optionalDailyStats =
+                    dailyStatsRepository.findByIdAndDate(item.getBoardId(), currentDate.minusDays(1));
+
+            if (optionalDailyStats.isEmpty()) {
+                views = item.getViews();
+                adViews = item.getAdViews();
+                playtime = item.getTotalPlaytime();
+            } else {
+                DailyStats beforeDailyStats = optionalDailyStats.get();
+                views = item.getViews() - beforeDailyStats.getTotalViews();
+                adViews = item.getAdViews() - beforeDailyStats.getAdViews();
+                playtime = item.getTotalPlaytime() - beforeDailyStats.getTotalPlaytime();
+            }
+
+            return DailyStats.builder()
+                    .accountId(item.getAccountId())
+                    .boardId(item.getBoardId())
+                    .views(views)
+                    .totalViews(item.getViews())
+                    .adViews(adViews)
+                    .totalAdViews(item.getAdViews())
+                    .playtime(playtime)
+                    .totalPlaytime(item.getTotalPlaytime())
+                    .date(currentDate)
+                    .build();
+        };
     }
 
     @Bean
     @StepScope
-    public ItemWriter<DailStats> dailyStatsItemWriter() {
+    public ItemWriter<DailyStats> dailyStatsItemWriter() {
         return dailyStatsRepository::saveAll;
     }
 }

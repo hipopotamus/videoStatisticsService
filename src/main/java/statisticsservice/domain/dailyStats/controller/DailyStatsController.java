@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+
 @RestController
 @RequestMapping("/dailyStats")
 @RequiredArgsConstructor
@@ -38,11 +40,11 @@ public class DailyStatsController {
         return new ResponseEntity<>("Hello World!", HttpStatus.OK);
     }
 
-    @PostMapping("/batch/{value}")
-    public ResponseEntity<String> batchTest(@PathVariable String value) throws Exception {
+    @PostMapping("/batch")
+    public ResponseEntity<String> batchTest(@RequestParam LocalDate date) throws Exception {
 
         JobParameters jobParameters = new JobParametersBuilder()
-                .addString("value", value)
+                .addLocalDate("date", date)
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("dailyStatsBatchJob"), jobParameters);
