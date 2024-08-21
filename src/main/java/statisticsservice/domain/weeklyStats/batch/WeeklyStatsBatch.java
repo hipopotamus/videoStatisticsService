@@ -104,7 +104,7 @@ public class WeeklyStatsBatch {
                     .boardId(item.getBoardId())
                     .views(views)
                     .playtime(playtime)
-                    .data(currentDate)
+                    .date(currentDate)
                     .build();
         };
     }

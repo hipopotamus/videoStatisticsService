@@ -16,7 +16,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class TopBoards {
+public class WeeklyTopBoard {
 
     @Id
     @GeneratedValue
