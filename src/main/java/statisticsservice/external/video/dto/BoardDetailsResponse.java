@@ -1,4 +1,4 @@
-package statisticsservice.external.board.dto;
+package statisticsservice.external.video.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
