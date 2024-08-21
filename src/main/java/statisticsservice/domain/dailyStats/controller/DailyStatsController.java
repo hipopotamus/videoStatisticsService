@@ -18,21 +18,7 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class DailyStatsController {
 
-    private final JobLauncher jobLauncher;
-    private final JobRegistry jobRegistry;
     private final DailyStatsService dailyStatsService;
-
-    @PostMapping("/batch")
-    public ResponseEntity<String> batchTest(@RequestParam LocalDate date) throws Exception {
-
-        JobParameters jobParameters = new JobParametersBuilder()
-                .addLocalDate("date", date)
-                .toJobParameters();
-
-        jobLauncher.run(jobRegistry.getJob("dailyStatsBatchJob"), jobParameters);
-
-        return new ResponseEntity<>("OK Batch", HttpStatus.OK);
-    }
 
     @GetMapping("/revenue/{accountId}")
     public ResponseEntity<DailyRevenueResponse> dailyRevenueDetails(@PathVariable Long accountId, @RequestParam LocalDate date) {

@@ -21,6 +21,6 @@ public interface DailyStatsRepository extends JpaRepository<DailyStats, Long> {
             "and dailyStats.date = :date")
     List<DailyStats> findByAccountIdAndDate(@Param("accountId") Long accountId, @Param("date") LocalDate date);
 
-    @Query("select dailyStats from DailyStats dailyStats where dailyStats.date between :start and :end")
-    List<DailyStats> findWeeklyData(@Param("start") LocalDate start, @Param("end") LocalDate end);
+    @Query("select dailyStats from DailyStats dailyStats where dailyStats.date between :start and :end and dailyStats.boardId = :boardId")
+    List<DailyStats> findWeeklyData(@Param("boardId") Long boardId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 }
