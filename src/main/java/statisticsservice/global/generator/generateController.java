@@ -11,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import statisticsservice.domain.weeklyStats.entity.WeeklyStats;
+import statisticsservice.domain.weeklyStats.service.WeeklyStatsGenerateService;
 
 import java.time.LocalDate;
 
@@ -21,6 +23,7 @@ public class generateController {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
+    private final WeeklyStatsGenerateService weeklyStatsGenerateService;
 
     @PostMapping("/daily")
     public ResponseEntity<String> generateDailyStats(@RequestParam LocalDate date) throws Exception {
@@ -42,6 +45,7 @@ public class generateController {
                 .toJobParameters();
 
         jobLauncher.run(jobRegistry.getJob("weeklyStatsBatchJob"), jobParameters);
+        weeklyStatsGenerateService.generateTopBoards(date);
 
         return new ResponseEntity<>("Success Weekly Batch", HttpStatus.OK);
     }

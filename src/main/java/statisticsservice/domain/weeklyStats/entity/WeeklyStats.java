@@ -31,5 +31,5 @@ public class WeeklyStats {
 
     private long playtime;
 
-    private LocalDate data;
+    private LocalDate date;
 }
