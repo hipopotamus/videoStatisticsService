@@ -6,7 +6,7 @@ import statisticsservice.domain.weeklyStats.entity.WeeklyTopBoard;
 import java.time.LocalDate;
 import java.util.Optional;
 
-public interface TopBoardsRepository extends JpaRepository<WeeklyTopBoard, Long> {
+public interface WeeklyTopBoardsRepository extends JpaRepository<WeeklyTopBoard, Long> {
 
     Optional<WeeklyTopBoard> findByDate(LocalDate date);
 }

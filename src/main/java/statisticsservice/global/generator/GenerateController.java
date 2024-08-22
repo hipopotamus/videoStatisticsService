@@ -1,6 +1,7 @@
 package statisticsservice.global.generator;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.batch.core.JobExecution;
 import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.configuration.JobRegistry;
@@ -27,7 +28,7 @@ public class GenerateController {
     private final DailyStatsService dailyStatsService;
 
     @PostMapping("/daily")
-    public ResponseEntity<String> generateDailyStats(@RequestParam LocalDate date) throws Exception {
+    public ResponseEntity<String> generateDailyStats(@RequestParam LocalDate date) {
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLocalDate("date", date)
@@ -35,28 +36,44 @@ public class GenerateController {
 
         try {
             jobLauncher.run(jobRegistry.getJob("dailyStatsBatchJob"), jobParameters);
-            dailyStatsService.addTopBoard(date);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
+        dailyStatsService.addTopBoard(date);
 
         return new ResponseEntity<>("Success Daily Batch", HttpStatus.OK);
     }
 
     @PostMapping("weekly")
-    public ResponseEntity<String> generateWeeklyStats(@RequestParam LocalDate date) throws Exception {
+    public ResponseEntity<String> generateWeeklyStats(@RequestParam LocalDate date) {
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLocalDate("date", date)
                 .toJobParameters();
 
         try {
-            jobLauncher.run(jobRegistry.getJob("weeklyStatsBatchJob"), jobParameters);
-            weeklyStatsService.addTopBoard(date);
+            JobExecution weeklyStatsBatchJob = jobLauncher.run(jobRegistry.getJob("weeklyStatsBatchJob"), jobParameters);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+        weeklyStatsService.addTopBoard(date);
+
+        return new ResponseEntity<>("Success Weekly Batch", HttpStatus.OK);
+    }
+
+    @PostMapping("monthly")
+    public ResponseEntity<String> generateMonthlyStats(@RequestParam LocalDate date) {
+
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLocalDate("date", date)
+                .toJobParameters();
+
+        try {
+            jobLauncher.run(jobRegistry.getJob("monthlyStatsBatchJob"), jobParameters);
         } catch (Exception e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        return new ResponseEntity<>("Success Weekly Batch", HttpStatus.OK);
+        return new ResponseEntity<>("Success Monthly Batch", HttpStatus.OK);
     }
 }

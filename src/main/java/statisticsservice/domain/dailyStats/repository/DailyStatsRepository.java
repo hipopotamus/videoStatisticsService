@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
-import statisticsservice.domain.weeklyStats.entity.WeeklyStats;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -25,9 +24,10 @@ public interface DailyStatsRepository extends JpaRepository<DailyStats, Long> {
     List<DailyStats> findByAccountIdAndDate(@Param("accountId") Long accountId, @Param("date") LocalDate date);
 
     @Query("select dailyStats from DailyStats dailyStats where dailyStats.date between :start and :end and dailyStats.boardId = :boardId")
-    List<DailyStats> findWeeklyData(@Param("boardId") Long boardId, @Param("start") LocalDate start, @Param("end") LocalDate end);
+    List<DailyStats> findBetweenDatas(@Param("boardId") Long boardId, @Param("start") LocalDate start, @Param("end") LocalDate end);
 
-    Page<DailyStats> findDailyStatsList(Pageable pageable);
+    @Query("select dailyStats from DailyStats dailyStats where dailyStats.date = :date")
+    Page<DailyStats> findDailyStatsList(Pageable pageable,@Param("date") LocalDate date);
 
     List<DailyStats> findTop5ByDateOrderByViewsDesc(LocalDate date);
 
