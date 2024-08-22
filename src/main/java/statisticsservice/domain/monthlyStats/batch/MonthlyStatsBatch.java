@@ -90,7 +90,7 @@ public class MonthlyStatsBatch {
             long playtime = 0;
 
             LocalDate start = date.with(TemporalAdjusters.firstDayOfMonth());
-            List<DailyStats> monthlyDataList = dailyStatsRepository.findBetweenDatas(item.getBoardId(), start, date);
+            List<DailyStats> monthlyDataList = dailyStatsRepository.findBetweenDates(item.getBoardId(), start, date);
 
             for (DailyStats dailyStats : monthlyDataList) {
                 views += dailyStats.getViews();

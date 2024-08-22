@@ -25,6 +25,7 @@ public class DailyVideoRevenueResponse {
                 .boardId(dailyStats.getBoardId())
                 .totalRevenue(dailyStats.getRevenue())
                 .videoRevenue(dailyStats.getVideoRevenue())
+                .adVideoRevenue(dailyStats.getAdVideoRevenue())
                 .build();
     }
 }

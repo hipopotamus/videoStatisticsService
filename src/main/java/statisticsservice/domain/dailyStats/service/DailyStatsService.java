@@ -37,7 +37,7 @@ public class DailyStatsService {
                 .map(DailyVideoRevenueResponse::of)
                 .toList();
 
-        DailyRevenue dailyRevenue = dailyRevenueRepository.findByAccountId(accountId)
+        DailyRevenue dailyRevenue = dailyRevenueRepository.findByAccountIdAndData(accountId, date)
                 .orElseThrow(() -> new NoSuchElementException("일일 정산금을 찾을 수 없습니다."));
 
         return DailyRevenueResponse.of(dailyRevenue, dailyVideoRevenueList);

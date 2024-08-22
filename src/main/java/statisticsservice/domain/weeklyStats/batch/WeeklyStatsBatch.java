@@ -91,7 +91,7 @@ public class WeeklyStatsBatch {
             long playtime = 0;
 
             LocalDate start = currentDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            List<DailyStats> weeklyDataList = dailyStatsRepository.findBetweenDatas(item.getBoardId(), start, currentDate);
+            List<DailyStats> weeklyDataList = dailyStatsRepository.findBetweenDates(item.getBoardId(), start, currentDate);
 
             for (DailyStats dailyStats : weeklyDataList) {
                 views += dailyStats.getViews();

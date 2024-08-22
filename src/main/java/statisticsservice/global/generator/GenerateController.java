@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
+import statisticsservice.domain.monthlyStats.service.MonthlyStatsService;
 import statisticsservice.domain.weeklyStats.service.WeeklyStatsService;
 import statisticsservice.global.exception.BusinessLogicException;
 import statisticsservice.global.exception.ExceptionCode;
@@ -26,11 +27,12 @@ public class GenerateController {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
-    private final WeeklyStatsService weeklyStatsService;
     private final DailyStatsService dailyStatsService;
+    private final WeeklyStatsService weeklyStatsService;
+    private final MonthlyStatsService monthlyStatsService;
 
     @PostMapping("/daily")
-    public ResponseEntity<String> generateDailyStats(@RequestParam LocalDate date) throws Exception{
+    public ResponseEntity<String> generateDailyStats(@RequestParam LocalDate date) throws Exception {
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLocalDate("date", date)
@@ -46,16 +48,15 @@ public class GenerateController {
     }
 
     @PostMapping("weekly")
-    public ResponseEntity<String> generateWeeklyStats(@RequestParam LocalDate date) {
+    public ResponseEntity<String> generateWeeklyStats(@RequestParam LocalDate date) throws Exception {
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLocalDate("date", date)
                 .toJobParameters();
 
-        try {
-            JobExecution weeklyStatsBatchJob = jobLauncher.run(jobRegistry.getJob("weeklyStatsBatchJob"), jobParameters);
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        JobExecution weeklyStatsBatchJob = jobLauncher.run(jobRegistry.getJob("weeklyStatsBatchJob"), jobParameters);
+        if (weeklyStatsBatchJob.getStatus() != BatchStatus.COMPLETED) {
+            throw new BusinessLogicException(ExceptionCode.GLOBAL_EXCEPTION);
         }
         weeklyStatsService.addTopBoard(date);
 
@@ -63,17 +64,17 @@ public class GenerateController {
     }
 
     @PostMapping("monthly")
-    public ResponseEntity<String> generateMonthlyStats(@RequestParam LocalDate date) {
+    public ResponseEntity<String> generateMonthlyStats(@RequestParam LocalDate date) throws Exception {
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLocalDate("date", date)
                 .toJobParameters();
 
-        try {
-            jobLauncher.run(jobRegistry.getJob("monthlyStatsBatchJob"), jobParameters);
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        JobExecution monthlyStatsBatchJob = jobLauncher.run(jobRegistry.getJob("monthlyStatsBatchJob"), jobParameters);
+        if (monthlyStatsBatchJob.getStatus() != BatchStatus.COMPLETED) {
+            throw new BusinessLogicException(ExceptionCode.GLOBAL_EXCEPTION);
         }
+        monthlyStatsService.addTopBoard(date);
 
         return new ResponseEntity<>("Success Monthly Batch", HttpStatus.OK);
     }
