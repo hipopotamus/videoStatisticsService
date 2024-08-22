@@ -25,10 +25,10 @@ public class WeeklyStatsService {
     public void addTopBoard(LocalDate date) {
 
         List<Long> topBoardListByViews = weeklyStatsRepository.findTop5ByDateOrderByViewsDesc(date).stream()
-                .map(WeeklyStats::getId)
+                .map(WeeklyStats::getBoardId)
                 .toList();
         List<Long> topBoardListByPlaytime = weeklyStatsRepository.findTop5ByDateOrderByPlaytimeDesc(date).stream()
-                .map(WeeklyStats::getId)
+                .map(WeeklyStats::getBoardId)
                 .toList();
 
         WeeklyTopBoard weeklyTopBoard = WeeklyTopBoard.builder()

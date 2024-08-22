@@ -1,4 +1,4 @@
-package statisticsservice.domain.weeklyStats.entity;
+package statisticsservice.domain.dailyStats.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -16,11 +16,11 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class WeeklyTopBoard {
+public class DailyTopBoard {
 
     @Id
     @GeneratedValue
-    @Column(name = "weeklyTopBoard_id")
+    @Column(name = "dailyTopBoard_id")
     private Long id;
 
     private LocalDate date;
