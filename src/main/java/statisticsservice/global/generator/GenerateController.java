@@ -1,9 +1,8 @@
 package statisticsservice.global.generator;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.JobExecution;
-import org.springframework.batch.core.JobParameters;
-import org.springframework.batch.core.JobParametersBuilder;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.batch.core.*;
 import org.springframework.batch.core.configuration.JobRegistry;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.http.HttpStatus;
@@ -14,9 +13,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
 import statisticsservice.domain.weeklyStats.service.WeeklyStatsService;
+import statisticsservice.global.exception.BusinessLogicException;
+import statisticsservice.global.exception.ExceptionCode;
 
 import java.time.LocalDate;
 
+@Slf4j
 @RestController
 @RequestMapping("/generate")
 @RequiredArgsConstructor
@@ -28,16 +30,15 @@ public class GenerateController {
     private final DailyStatsService dailyStatsService;
 
     @PostMapping("/daily")
-    public ResponseEntity<String> generateDailyStats(@RequestParam LocalDate date) {
+    public ResponseEntity<String> generateDailyStats(@RequestParam LocalDate date) throws Exception{
 
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLocalDate("date", date)
                 .toJobParameters();
 
-        try {
-            jobLauncher.run(jobRegistry.getJob("dailyStatsBatchJob"), jobParameters);
-        } catch (Exception e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        JobExecution dailyStatsBatchJob = jobLauncher.run(jobRegistry.getJob("dailyStatsBatchJob"), jobParameters);
+        if (dailyStatsBatchJob.getStatus() != BatchStatus.COMPLETED) {
+            throw new BusinessLogicException(ExceptionCode.GLOBAL_EXCEPTION);
         }
         dailyStatsService.addTopBoard(date);
 
