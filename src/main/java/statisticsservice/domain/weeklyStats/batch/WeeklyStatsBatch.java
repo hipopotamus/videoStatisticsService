@@ -15,8 +15,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.PlatformTransactionManager;
+import statisticsservice.domain.dailyStats.dto.DailyStatsIdResponse;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
+import statisticsservice.domain.dailyStats.service.DailyStatsService;
 import statisticsservice.domain.weeklyStats.entity.WeeklyStats;
 import statisticsservice.domain.weeklyStats.repository.WeeklyStatsRepository;
 import statisticsservice.external.video.client.VideoServiceClient;
@@ -37,6 +39,7 @@ public class WeeklyStatsBatch {
     private final PlatformTransactionManager platformTransactionManager;
     private final DailyStatsRepository dailyStatsRepository;
     private final WeeklyStatsRepository weeklyStatsRepository;
+    private final DailyStatsService dailyStatsService;
     private final VideoServiceClient videoServiceClient;
 
     @Bean
@@ -49,7 +52,7 @@ public class WeeklyStatsBatch {
     @Bean
     public Step weeklyStatsBatchStep() {
         return new StepBuilder("weeklyStatsBatchStep", jobRepository)
-                .<BoardStatisticListResponse, WeeklyStats>chunk(100, platformTransactionManager)
+                .<DailyStatsIdResponse, WeeklyStats>chunk(100, platformTransactionManager)
                 .reader(weeklyStatsItemReader(null))
                 .processor(weeklyStatsItemProcessor(null))
                 .writer(weeklyStatsItemWriter())
@@ -59,16 +62,16 @@ public class WeeklyStatsBatch {
     //**weeklyStatsBatchStep
     @Bean
     @StepScope
-    public ItemReader<BoardStatisticListResponse> weeklyStatsItemReader(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public ItemReader<DailyStatsIdResponse> weeklyStatsItemReader(@Value("#{jobParameters['date']}") LocalDate date) {
         return new ItemReader<>() {
 
-            private Iterator<BoardStatisticListResponse> currentIterator;
+            private Iterator<DailyStatsIdResponse> currentIterator;
             private int currentPage = 1;
 
             @Override
-            public BoardStatisticListResponse read() {
+            public DailyStatsIdResponse read() {
                 if (currentIterator == null || !currentIterator.hasNext()) {
-                    PageDto<BoardStatisticListResponse> page = videoServiceClient.boardStatisticsList(PageRequest.of(currentPage, 100));
+                    PageDto<DailyStatsIdResponse> page = dailyStatsService.findDailyStatsList(PageRequest.of(currentPage, 100), date);
                     if (page == null || page.getContent().isEmpty()) {
                         return null;
                     }
@@ -83,15 +86,15 @@ public class WeeklyStatsBatch {
 
     @Bean
     @StepScope
-    public ItemProcessor<BoardStatisticListResponse, WeeklyStats> weeklyStatsItemProcessor(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public ItemProcessor<DailyStatsIdResponse, WeeklyStats> weeklyStatsItemProcessor(@Value("#{jobParameters['date']}") LocalDate date) {
 
         return item -> {
 
             long views = 0;
             long playtime = 0;
 
-            LocalDate start = currentDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            List<DailyStats> weeklyDataList = dailyStatsRepository.findBetweenDates(item.getBoardId(), start, currentDate);
+            LocalDate start = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+            List<DailyStats> weeklyDataList = dailyStatsRepository.findBetweenDates(item.getBoardId(), start, date);
 
             for (DailyStats dailyStats : weeklyDataList) {
                 views += dailyStats.getViews();
@@ -103,7 +106,7 @@ public class WeeklyStatsBatch {
                     .boardId(item.getBoardId())
                     .views(views)
                     .playtime(playtime)
-                    .date(currentDate)
+                    .date(date)
                     .build();
         };
     }
