@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import statisticsservice.domain.dailyStats.entity.DailyTopBoard;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
 import statisticsservice.domain.weeklyStats.service.WeeklyStatsService;
 
@@ -20,7 +19,7 @@ import java.time.LocalDate;
 @RestController
 @RequestMapping("/generate")
 @RequiredArgsConstructor
-public class generateController {
+public class GenerateController {
 
     private final JobLauncher jobLauncher;
     private final JobRegistry jobRegistry;
@@ -34,8 +33,12 @@ public class generateController {
                 .addLocalDate("date", date)
                 .toJobParameters();
 
-        jobLauncher.run(jobRegistry.getJob("dailyStatsBatchJob"), jobParameters);
-        dailyStatsService.addTopBoard(date);
+        try {
+            jobLauncher.run(jobRegistry.getJob("dailyStatsBatchJob"), jobParameters);
+            dailyStatsService.addTopBoard(date);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
 
         return new ResponseEntity<>("Success Daily Batch", HttpStatus.OK);
     }
@@ -47,8 +50,12 @@ public class generateController {
                 .addLocalDate("date", date)
                 .toJobParameters();
 
-        jobLauncher.run(jobRegistry.getJob("weeklyStatsBatchJob"), jobParameters);
-        weeklyStatsService.addTopBoard(date);
+        try {
+            jobLauncher.run(jobRegistry.getJob("weeklyStatsBatchJob"), jobParameters);
+            weeklyStatsService.addTopBoard(date);
+        } catch (Exception e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
 
         return new ResponseEntity<>("Success Weekly Batch", HttpStatus.OK);
     }
