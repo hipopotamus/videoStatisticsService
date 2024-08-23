@@ -21,8 +21,7 @@ import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
 import statisticsservice.domain.weeklyStats.entity.WeeklyStats;
 import statisticsservice.domain.weeklyStats.repository.WeeklyStatsRepository;
-import statisticsservice.external.video.client.VideoServiceClient;
-import statisticsservice.external.video.dto.BoardStatisticListResponse;
+import statisticsservice.external.videoservice.client.VideoServiceClient;
 import statisticsservice.global.dto.PageDto;
 
 import java.time.DayOfWeek;

@@ -18,9 +18,9 @@ import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyRevenueRepository;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.statistics.service.RevenueService;
-import statisticsservice.external.video.dto.AccountIdResponse;
-import statisticsservice.external.video.client.VideoServiceClient;
-import statisticsservice.external.video.dto.BoardStatisticListResponse;
+import statisticsservice.external.videoservice.dto.AccountIdResponse;
+import statisticsservice.external.videoservice.client.VideoServiceClient;
+import statisticsservice.external.videoservice.dto.BoardStatisticListResponse;
 import statisticsservice.global.dto.PageDto;
 
 import java.time.LocalDate;
