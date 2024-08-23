@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import statisticsservice.domain.dailyStats.dto.DailyRevenueResponse;
 import statisticsservice.domain.dailyStats.dto.DailyTopBoardResponse;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
+import statisticsservice.global.argumentresolver.LoginId;
 
 import java.time.LocalDate;
 
@@ -17,10 +18,10 @@ public class DailyStatsController {
 
     private final DailyStatsService dailyStatsService;
 
-    @GetMapping("/revenue/{accountId}")
-    public ResponseEntity<DailyRevenueResponse> dailyRevenueDetails(@PathVariable Long accountId, @RequestParam LocalDate date) {
+    @GetMapping("/revenue")
+    public ResponseEntity<DailyRevenueResponse> dailyRevenueDetails(@LoginId Long loginId, @RequestParam LocalDate date) {
 
-        DailyRevenueResponse dailyRevenue = dailyStatsService.findDailyRevenue(accountId, date);
+        DailyRevenueResponse dailyRevenue = dailyStatsService.findDailyRevenue(loginId, date);
 
         return new ResponseEntity<>(dailyRevenue, HttpStatus.OK);
     }
