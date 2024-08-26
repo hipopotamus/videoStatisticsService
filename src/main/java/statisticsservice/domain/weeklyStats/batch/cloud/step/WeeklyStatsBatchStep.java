@@ -1,10 +1,8 @@
-package statisticsservice.domain.weeklyStats.batch;
+package statisticsservice.domain.weeklyStats.batch.cloud.step;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
@@ -21,7 +19,6 @@ import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
 import statisticsservice.domain.weeklyStats.entity.WeeklyStats;
 import statisticsservice.domain.weeklyStats.repository.WeeklyStatsRepository;
-import statisticsservice.external.videoservice.client.VideoServiceClient;
 import statisticsservice.global.dto.PageDto;
 
 import java.time.DayOfWeek;
@@ -32,24 +29,16 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
-public class WeeklyStatsBatch {
+public class WeeklyStatsBatchStep {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
     private final DailyStatsRepository dailyStatsRepository;
     private final WeeklyStatsRepository weeklyStatsRepository;
     private final DailyStatsService dailyStatsService;
-    private final VideoServiceClient videoServiceClient;
 
     @Bean
-    public Job weeklyStatsBatchJob() {
-        return new JobBuilder("weeklyStatsBatchJob", jobRepository)
-                .start(weeklyStatsBatchStep())
-                .build();
-    }
-
-    @Bean
-    public Step weeklyStatsBatchStep() {
+    public Step weeklyStatsStep() {
         return new StepBuilder("weeklyStatsBatchStep", jobRepository)
                 .<DailyStatsIdResponse, WeeklyStats>chunk(100, platformTransactionManager)
                 .reader(weeklyStatsItemReader(null))
@@ -58,7 +47,6 @@ public class WeeklyStatsBatch {
                 .build();
     }
 
-    //**weeklyStatsBatchStep
     @Bean
     @StepScope
     public ItemReader<DailyStatsIdResponse> weeklyStatsItemReader(@Value("#{jobParameters['date']}") LocalDate date) {
@@ -115,5 +103,4 @@ public class WeeklyStatsBatch {
     public ItemWriter<WeeklyStats> weeklyStatsItemWriter() {
         return weeklyStatsRepository::saveAll;
     }
-    //**weeklyStatsBatchStep
 }

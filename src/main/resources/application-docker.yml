@@ -6,7 +6,7 @@ spring:
     name : statisticsservice
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3308/statisticsservice
+    url: jdbc:mysql://mysql-statisticsservice:3306/statisticsservice
     username: root
     password: 123456
   jpa:
@@ -29,7 +29,7 @@ eureka:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://127.0.0.1:8761/eureka
+      defaultZone: http://eurekaservice:8761/eureka
 
 jwt:
   secret-key: 28d93268-a80b-4594-918b-5926a79a49ed

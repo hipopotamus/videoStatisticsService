@@ -1,10 +1,8 @@
-package statisticsservice.domain.monthlyStats.batch;
+package statisticsservice.domain.monthlyStats.batch.cloud.step;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
-import org.springframework.batch.core.job.builder.JobBuilder;
 import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
@@ -30,7 +28,7 @@ import java.util.List;
 
 @Configuration
 @RequiredArgsConstructor
-public class MonthlyStatsBatch {
+public class MonthlyStatsBatchStep {
 
     private final JobRepository jobRepository;
     private final PlatformTransactionManager platformTransactionManager;
@@ -39,14 +37,7 @@ public class MonthlyStatsBatch {
     private final MonthlyStatsRepository monthlyStatsRepository;
 
     @Bean
-    public Job monthlyStatsBatchJob() {
-        return new JobBuilder("monthlyStatsBatchJob", jobRepository)
-                .start(monthlyStatsBatchStep())
-                .build();
-    }
-
-    @Bean
-    public Step monthlyStatsBatchStep() {
+    public Step monthlyStatsStep() {
         return new StepBuilder("monthlyStatsBatchStep", jobRepository)
                 .<DailyStatsIdResponse, MonthlyStats>chunk(100, platformTransactionManager)
                 .reader(monthlyItemReader(null))
@@ -55,7 +46,6 @@ public class MonthlyStatsBatch {
                 .build();
     }
 
-    //**monthlyStatsBatchStep
     @Bean
     @StepScope
     public ItemReader<DailyStatsIdResponse> monthlyItemReader(@Value("#{jobParameters['date']}") LocalDate date) {
@@ -112,6 +102,4 @@ public class MonthlyStatsBatch {
     public ItemWriter<MonthlyStats> montlyStatsItemWriter() {
         return monthlyStatsRepository::saveAll;
     }
-    //**monthlyStatsBatchStep
 }
-

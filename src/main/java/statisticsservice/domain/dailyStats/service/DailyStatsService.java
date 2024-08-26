@@ -16,6 +16,8 @@ import statisticsservice.domain.dailyStats.repository.DailyRevenueRepository;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.dailyStats.repository.DailyTopBoardRepository;
 import statisticsservice.global.dto.PageDto;
+import statisticsservice.global.exception.BusinessLogicException;
+import statisticsservice.global.exception.ExceptionCode;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -38,34 +40,15 @@ public class DailyStatsService {
                 .toList();
 
         DailyRevenue dailyRevenue = dailyRevenueRepository.findByAccountIdAndData(accountId, date)
-                .orElseThrow(() -> new NoSuchElementException("일일 정산금을 찾을 수 없습니다."));
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.NOT_FOUND_REVENUE));
 
         return DailyRevenueResponse.of(dailyRevenue, dailyVideoRevenueList);
-    }
-
-    @Transactional
-    public void addTopBoard(LocalDate date) {
-
-        List<Long> topBoardListByViews = dailyStatsRepository.findTop5ByDateOrderByViewsDesc(date).stream()
-                .map(DailyStats::getBoardId)
-                .toList();
-        List<Long> topBoardListByPlaytime = dailyStatsRepository.findTop5ByDateOrderByPlaytimeDesc(date).stream()
-                .map(DailyStats::getBoardId)
-                .toList();
-
-        DailyTopBoard dailyTopBoard = DailyTopBoard.builder()
-                .boardIdListByViews(topBoardListByViews)
-                .boardIdListByPlaytime(topBoardListByPlaytime)
-                .date(date)
-                .build();
-
-        dailyTopBoardRepository.save(dailyTopBoard);
     }
 
     public DailyTopBoardResponse findDailyTopBoard(LocalDate date) {
 
         DailyTopBoard dailyTopBoard = dailyTopBoardRepository.findByDate(date)
-                .orElseThrow(() -> new NoSuchElementException("데이터가 존재하지 않습니다."));
+                .orElseThrow(() -> new BusinessLogicException(ExceptionCode.NOT_FOUND_TOPBOARD));
 
         return DailyTopBoardResponse.of(dailyTopBoard);
     }
