@@ -14,7 +14,9 @@ public enum ExceptionCode {
     UN_AUTHENTICATION(401, "인증되지 않았습니다.", "006"),
     FORBIDDEN(403, "잘못된 접근입니다.", "007"),
     NOT_FOUND_BOARD(404, "게시글을 찾을 수 없습니다.", "008"),
-    RETRYABLE_EXCEPTION(500, "외부 연결에 실패 했습니다.", "009");
+    RETRYABLE_EXCEPTION(500, "외부 연결에 실패 했습니다.", "009"),
+    FAIL_BATCH(500, "배치작업에 실패 했습니다.", "010"),
+    ;
 
     private int status;
 
