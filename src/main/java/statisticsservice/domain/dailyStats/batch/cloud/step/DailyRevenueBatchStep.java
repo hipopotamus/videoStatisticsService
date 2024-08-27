@@ -83,7 +83,7 @@ public class DailyRevenueBatchStep {
 
             return DailyRevenue.builder()
                     .accountId(item.getAccountId())
-                    .data(currentDate)
+                    .date(currentDate)
                     .revenue(totalRevenue)
                     .build();
         };

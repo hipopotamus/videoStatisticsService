@@ -10,7 +10,6 @@ import statisticsservice.domain.dailyStats.dto.DailyStatsIdResponse;
 import statisticsservice.domain.dailyStats.dto.DailyTopBoardResponse;
 import statisticsservice.domain.dailyStats.dto.DailyVideoRevenueResponse;
 import statisticsservice.domain.dailyStats.entity.DailyRevenue;
-import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.entity.DailyTopBoard;
 import statisticsservice.domain.dailyStats.repository.DailyRevenueRepository;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
@@ -21,7 +20,6 @@ import statisticsservice.global.exception.ExceptionCode;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -39,7 +37,7 @@ public class DailyStatsService {
                 .map(DailyVideoRevenueResponse::of)
                 .toList();
 
-        DailyRevenue dailyRevenue = dailyRevenueRepository.findByAccountIdAndData(accountId, date)
+        DailyRevenue dailyRevenue = dailyRevenueRepository.findByAccountIdAndDate(accountId, date)
                 .orElseThrow(() -> new BusinessLogicException(ExceptionCode.NOT_FOUND_REVENUE));
 
         return DailyRevenueResponse.of(dailyRevenue, dailyVideoRevenueList);

@@ -1,0 +1,81 @@
+= VideoService
+:sectnums:
+:toc: left
+:toclevels: 2
+:toc-title: Table of Contents
+:source-highlighter: prettify
+
+v1.0.0, 2024.08.13
+
+***
+== DailyStatsController
+=== 일일 수익 조회
+.curl-request
+include::{snippets}/daily-revenue-details/curl-request.adoc[]
+
+.http-request
+include::{snippets}/daily-revenue-details/http-request.adoc[]
+
+.request-headers
+include::{snippets}/daily-revenue-details/request-headers.adoc[]
+
+.query-parameters
+include::{snippets}/daily-revenue-details/query-parameters.adoc[]
+
+.http-response
+include::{snippets}/daily-revenue-details/http-response.adoc[]
+
+.response-fields
+include::{snippets}/daily-revenue-details/response-fields.adoc[]
+
+=== 일일 상위 게시판 조회
+.curl-request
+include::{snippets}/dailyTopBoardDetails/curl-request.adoc[]
+
+.http-request
+include::{snippets}/dailyTopBoardDetails/http-request.adoc[]
+
+.query-parameters
+include::{snippets}/dailyTopBoardDetails/query-parameters.adoc[]
+
+.http-response
+include::{snippets}/dailyTopBoardDetails/http-response.adoc[]
+
+.response-fields
+include::{snippets}/dailyTopBoardDetails/response-fields.adoc[]
+
+***
+== WeeklyStatsController
+=== 주간 상위 게시판 조회
+.curl-request
+include::{snippets}/weeklyTopBoardDetails/curl-request.adoc[]
+
+.http-request
+include::{snippets}/weeklyTopBoardDetails/http-request.adoc[]
+
+.query-parameters
+include::{snippets}/weeklyTopBoardDetails/query-parameters.adoc[]
+
+.http-response
+include::{snippets}/weeklyTopBoardDetails/http-response.adoc[]
+
+.response-fields
+include::{snippets}/weeklyTopBoardDetails/response-fields.adoc[]
+
+***
+== MonthlyStatsController
+=== 월간 상위 게시판 조회
+.curl-request
+include::{snippets}/monthlyTopBoardDetails/curl-request.adoc[]
+
+.http-request
+include::{snippets}/monthlyTopBoardDetails/http-request.adoc[]
+
+.query-parameters
+include::{snippets}/monthlyTopBoardDetails/query-parameters.adoc[]
+
+.http-response
+include::{snippets}/monthlyTopBoardDetails/http-response.adoc[]
+
+.response-fields
+include::{snippets}/monthlyTopBoardDetails/response-fields.adoc[]

@@ -25,7 +25,7 @@ public class DailyRevenue {
 
     private Long accountId;
 
-    private LocalDate data;
+    private LocalDate date;
 
     private double revenue;
 }

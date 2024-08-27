@@ -1,35 +1,31 @@
 server:
-  port: 8082
+  port: 8080
 
 spring:
   application:
     name : statisticsservice
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3308/statisticsservice
-    username: root
-    password: 123456
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test
+    username: sa
+    password:
   jpa:
     hibernate:
       ddl-auto: create
+    defer-datasource-initialization: true
     properties:
       hibernate:
         default_batch_fetch_size: 100
+  sql:
+    init:
+      data-locations: classpath:static/db/data.sql
+      mode: always
   batch:
     job:
       enabled: false
     jdbc:
       initialize-schema: always
       schema: classpath:org/springframework/batch/core/schema-mysql.sql
-
-eureka:
-  instance:
-    instance-id: ${spring.cloud.client.hostname}:${spring.application.instance.id:${random.value}}
-  client:
-    register-with-eureka: true
-    fetch-registry: true
-    service-url:
-      defaultZone: http://127.0.0.1:8761/eureka
 
 jwt:
   secret-key: 28d93268-a80b-4594-918b-5926a79a49ed
