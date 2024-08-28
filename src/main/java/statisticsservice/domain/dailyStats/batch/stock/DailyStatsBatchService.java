@@ -1,5 +1,6 @@
 package statisticsservice.domain.dailyStats.batch.stock;
 
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ public class DailyStatsBatchService {
     private final DailyTopBoardRepository dailyTopBoardRepository;
 
     @Transactional
+    @Timed(value = "batch.daily.topBoard")
     public void addTopBoard(LocalDate date) {
 
         List<Long> topBoardListByViews = dailyStatsRepository.findTop5ByDateOrderByViewsDesc(date).stream()

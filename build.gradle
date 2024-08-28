@@ -38,6 +38,8 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-batch'
     implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
     implementation group: 'com.google.code.gson', name: 'gson'
+    implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
 
     //jwt
     implementation 'io.jsonwebtoken:jjwt-api:0.11.5'

@@ -44,6 +44,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/weeklyStats/topBoards").permitAll()
                         .requestMatchers(HttpMethod.GET, "/monthlyStats/topBoards").permitAll()
                         .requestMatchers(HttpMethod.POST, "/generate/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 );
 

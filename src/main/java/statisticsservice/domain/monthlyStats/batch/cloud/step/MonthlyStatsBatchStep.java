@@ -1,5 +1,6 @@
 package statisticsservice.domain.monthlyStats.batch.cloud.step;
 
+import com.zaxxer.hikari.HikariDataSource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -8,10 +9,13 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.dto.DailyStatsIdResponse;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
@@ -21,6 +25,7 @@ import statisticsservice.domain.monthlyStats.entity.MonthlyStats;
 import statisticsservice.domain.monthlyStats.repository.MonthlyStatsRepository;
 import statisticsservice.global.dto.PageDto;
 
+import javax.sql.DataSource;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Iterator;
@@ -37,7 +42,7 @@ public class MonthlyStatsBatchStep {
     private final MonthlyStatsRepository monthlyStatsRepository;
 
     @Bean
-    public Step monthlyStatsStep() {
+    public Step monthlyStatsStep(DataSource dataSource) {
         return new StepBuilder("monthlyStatsBatchStep", jobRepository)
                 .<DailyStatsIdResponse, MonthlyStats>chunk(100, platformTransactionManager)
                 .reader(monthlyItemReader(null))
@@ -52,7 +57,7 @@ public class MonthlyStatsBatchStep {
         return new ItemReader<>() {
 
             private Iterator<DailyStatsIdResponse> currentIterator;
-            private int currentPage = 1;
+            private int currentPage = 0;
 
             @Override
             public DailyStatsIdResponse read() {
@@ -68,6 +73,19 @@ public class MonthlyStatsBatchStep {
                 return currentIterator.hasNext() ? currentIterator.next() : null;
             }
         };
+    }
+
+    @Bean
+    @StepScope
+    public JdbcCursorItemReader<DailyStatsIdResponse> monthlyItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate date, DataSource dataSource) {
+        return new JdbcCursorItemReaderBuilder<DailyStatsIdResponse>()
+                .fetchSize(100)
+                .dataSource(dataSource)
+                .rowMapper(new BeanPropertyRowMapper<>(DailyStatsIdResponse.class))
+                .name("monthlyCursorItemReader")
+                .sql("select account_id, board_id from daily_stats where date = ?")
+                .queryArguments(java.sql.Date.valueOf(date))
+                .build();
     }
 
     @Bean

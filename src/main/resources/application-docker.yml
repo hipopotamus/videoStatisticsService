@@ -31,6 +31,12 @@ eureka:
     service-url:
       defaultZone: http://eurekaservice:8761/eureka
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, beans, busrefresh, info, prometheus, metrics
+
 jwt:
   secret-key: 28d93268-a80b-4594-918b-5926a79a49ed
   expiration: 36000000

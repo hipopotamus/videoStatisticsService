@@ -1,5 +1,6 @@
 package statisticsservice.domain.dailyStats.controller;
 
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,6 +20,7 @@ public class DailyStatsController {
     private final DailyStatsService dailyStatsService;
 
     @GetMapping("/revenue")
+    @Timed(value = "daily.batch", longTask = true)
     public ResponseEntity<DailyRevenueResponse> dailyRevenueDetails(@LoginId Long loginId, @RequestParam LocalDate date) {
 
         DailyRevenueResponse dailyRevenue = dailyStatsService.findDailyRevenue(loginId, date);

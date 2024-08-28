@@ -1,5 +1,6 @@
 package statisticsservice.domain.weeklyStats.batch.stock;
 
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +21,7 @@ public class WeeklyStatsBatchService {
     private final WeeklyTopBoardsRepository weeklyTopBoardsRepository;
 
     @Transactional
+    @Timed(value = "batch.weekly.topBoard")
     public void addTopBoard(LocalDate date) {
 
         List<Long> topBoardListByViews = weeklyStatsRepository.findTop5ByDateOrderByViewsDesc(date).stream()

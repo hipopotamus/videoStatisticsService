@@ -1,5 +1,6 @@
 package statisticsservice.global.generator;
 
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.*;
@@ -37,6 +38,7 @@ public class GenerateController {
     private final WeeklyStatsBatchService weeklyStatsBatchService;
 
     @PostMapping
+    @Timed(value = "batch.daily")
     public ResponseEntity<String> generateBatch(@RequestParam LocalDate today) {
 
         JobParameters jobParameters = new JobParametersBuilder()

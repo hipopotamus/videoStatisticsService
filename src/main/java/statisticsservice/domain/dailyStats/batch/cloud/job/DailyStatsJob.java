@@ -1,5 +1,6 @@
 package statisticsservice.domain.dailyStats.batch.cloud.job;
 
+import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.job.builder.JobBuilder;
@@ -18,10 +19,11 @@ public class DailyStatsJob {
     private final DailyRevenueBatchStep dailyRevenueBatchStep;
 
     @Bean
+    @Timed(value = "batch.daily.stats")
     public Job dailyStatsBatchJob() {
         return new JobBuilder("dailyStatsBatchJob", jobRepository)
-                .start(dailyRevenueBatchStep.dailyRevenueStep())
-                .next(dailyStatsBatchStep.dailyStatsStep())
+                .start(dailyStatsBatchStep.dailyStatsStep())
+                .next(dailyRevenueBatchStep.dailyRevenueStep())
                 .build();
     }
 }

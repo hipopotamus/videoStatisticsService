@@ -11,7 +11,7 @@ spring:
     password: 123456
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: update
     properties:
       hibernate:
         default_batch_fetch_size: 100
@@ -30,6 +30,13 @@ eureka:
     fetch-registry: true
     service-url:
       defaultZone: http://127.0.0.1:8761/eureka
+
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: refresh, health, beans, busrefresh, info, prometheus, metrics
 
 jwt:
   secret-key: 28d93268-a80b-4594-918b-5926a79a49ed

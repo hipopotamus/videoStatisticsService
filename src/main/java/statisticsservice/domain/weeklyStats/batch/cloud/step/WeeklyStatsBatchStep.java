@@ -8,10 +8,13 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.dto.DailyStatsIdResponse;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
@@ -21,6 +24,7 @@ import statisticsservice.domain.weeklyStats.entity.WeeklyStats;
 import statisticsservice.domain.weeklyStats.repository.WeeklyStatsRepository;
 import statisticsservice.global.dto.PageDto;
 
+import javax.sql.DataSource;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -38,7 +42,7 @@ public class WeeklyStatsBatchStep {
     private final DailyStatsService dailyStatsService;
 
     @Bean
-    public Step weeklyStatsStep() {
+    public Step weeklyStatsStep(DataSource dataSource) {
         return new StepBuilder("weeklyStatsBatchStep", jobRepository)
                 .<DailyStatsIdResponse, WeeklyStats>chunk(100, platformTransactionManager)
                 .reader(weeklyStatsItemReader(null))
@@ -53,7 +57,7 @@ public class WeeklyStatsBatchStep {
         return new ItemReader<>() {
 
             private Iterator<DailyStatsIdResponse> currentIterator;
-            private int currentPage = 1;
+            private int currentPage = 0;
 
             @Override
             public DailyStatsIdResponse read() {
@@ -69,6 +73,19 @@ public class WeeklyStatsBatchStep {
                 return currentIterator.hasNext() ? currentIterator.next() : null;
             }
         };
+    }
+
+    @Bean
+    @StepScope
+    public JdbcCursorItemReader<DailyStatsIdResponse> weeklyItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate date, DataSource dataSource) {
+        return new JdbcCursorItemReaderBuilder<DailyStatsIdResponse>()
+                .fetchSize(100)
+                .dataSource(dataSource)
+                .rowMapper(new BeanPropertyRowMapper<>(DailyStatsIdResponse.class))
+                .name("weeklyCursorItemReader")
+                .sql("select account_id, board_id from daily_stats where date = ?")
+                .queryArguments(java.sql.Date.valueOf(date))
+                .build();
     }
 
     @Bean
