@@ -8,10 +8,14 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.support.SynchronizedItemReader;
+import org.springframework.batch.item.support.builder.SynchronizedItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.entity.DailyRevenue;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
@@ -41,9 +45,10 @@ public class DailyRevenueBatchStep {
     public Step dailyRevenueStep() {
         return new StepBuilder("dailyRevenueBatchStep", jobRepository)
                 .<AccountIdResponse, DailyRevenue>chunk(100, platformTransactionManager)
-                .reader(accountIdItemReaderByCursor(null))
+                .reader(accountIdItemReaderByCursorWithSynchro(null))
                 .processor(accountIdItemProcessor(null))
                 .writer(dailyRevenueItemWriterByJdbc())
+                .taskExecutor(dailyRevenueTaskExecutor())
                 .build();
     }
 
@@ -98,6 +103,35 @@ public class DailyRevenueBatchStep {
 
     @Bean
     @StepScope
+    public SynchronizedItemReader<AccountIdResponse> accountIdItemReaderByCursorWithSynchro(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+        ItemReader<AccountIdResponse> itemReader = new ItemReader<>() {
+
+            private Iterator<AccountIdResponse> currentIterator;
+            private final int limit = 100;
+            private long lastAccountId = 0;
+
+            @Override
+            public AccountIdResponse read() {
+                if (currentIterator == null || !currentIterator.hasNext()) {
+                    List<AccountIdResponse> responseList = videoServiceClient.accountIdCursor(lastAccountId, limit);
+                    if (responseList == null || responseList.isEmpty()) {
+                        return null;
+                    }
+                    currentIterator = responseList.iterator();
+                    lastAccountId = responseList.getLast().getAccountId();
+                }
+
+                return currentIterator.hasNext() ? currentIterator.next() : null;
+            }
+        };
+
+        return new SynchronizedItemReaderBuilder<AccountIdResponse>()
+                .delegate(itemReader)
+                .build();
+    }
+
+    @Bean
+    @StepScope
     public ItemProcessor<AccountIdResponse, DailyRevenue> accountIdItemProcessor(@Value("#{jobParameters['date']}") LocalDate currentDate) {
         return item -> {
 
@@ -126,5 +160,15 @@ public class DailyRevenueBatchStep {
     @StepScope
     public ItemWriter<DailyRevenue> dailyRevenueItemWriterByJdbc() {
         return chunk -> dailyRevenueJdbcRepository.batchInsertDailyStats(chunk.getItems());
+    }
+
+    @Bean
+    public TaskExecutor dailyRevenueTaskExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(4);
+        taskExecutor.setMaxPoolSize(8);
+        taskExecutor.setQueueCapacity(100);
+        taskExecutor.afterPropertiesSet();
+        return taskExecutor;
     }
 }

@@ -8,10 +8,14 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.batch.item.ItemProcessor;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
+import org.springframework.batch.item.support.SynchronizedItemReader;
+import org.springframework.batch.item.support.builder.SynchronizedItemReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyStatsJdbcRepository;
@@ -41,9 +45,10 @@ public class DailyStatsBatchStep {
     public Step dailyStatsStep() {
         return new StepBuilder("dailyStatsBatchStep", jobRepository)
                 .<BoardStatisticListResponse, DailyStats>chunk(100, platformTransactionManager)
-                .reader(boardStatisticsItemReaderByCursor(null))
+                .reader(boardStatisticsItemReaderByCursorWithSynchro(null))
                 .processor(boardStatisticsItemProcessor(null))
                 .writer(dailyStatsItemWriterByJdbc())
+                .taskExecutor(dailyStatsTaskExecutor())
                 .build();
     }
 
@@ -94,6 +99,35 @@ public class DailyStatsBatchStep {
                 return currentIterator.hasNext() ? currentIterator.next() : null;
             }
         };
+    }
+
+    @Bean
+    @StepScope
+    public SynchronizedItemReader<BoardStatisticListResponse> boardStatisticsItemReaderByCursorWithSynchro(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+        ItemReader<BoardStatisticListResponse> itemReader = new ItemReader<>() {
+
+            private Iterator<BoardStatisticListResponse> currentIterator;
+            private final int limit = 100;
+            private long lastBoardId = 0;
+
+            @Override
+            public BoardStatisticListResponse read() {
+                if (currentIterator == null || !currentIterator.hasNext()) {
+                    List<BoardStatisticListResponse> responseList = videoServiceClient.boardStatisticsCursor(lastBoardId, limit);
+                    if (responseList == null || responseList.isEmpty()) {
+                        return null;
+                    }
+                    currentIterator = responseList.iterator();
+                    lastBoardId = responseList.getLast().getBoardId();
+                }
+
+                return currentIterator.hasNext() ? currentIterator.next() : null;
+            }
+        };
+
+        return new SynchronizedItemReaderBuilder<BoardStatisticListResponse>()
+                .delegate(itemReader)
+                .build();
     }
 
     @Bean
@@ -151,5 +185,15 @@ public class DailyStatsBatchStep {
     @StepScope
     public ItemWriter<DailyStats> dailyStatsItemWriterByJdbc() {
         return chunk -> dailyStatsJdbcRepository.batchInsertDailyStats(chunk.getItems());
+    }
+
+    @Bean
+    public TaskExecutor dailyStatsTaskExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(4);
+        taskExecutor.setMaxPoolSize(8);
+        taskExecutor.setQueueCapacity(100);
+        taskExecutor.afterPropertiesSet();
+        return taskExecutor;
     }
 }

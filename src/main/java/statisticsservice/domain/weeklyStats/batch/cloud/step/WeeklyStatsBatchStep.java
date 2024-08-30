@@ -10,11 +10,17 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.batch.item.support.SynchronizedItemReader;
+import org.springframework.batch.item.support.SynchronizedItemStreamReader;
+import org.springframework.batch.item.support.builder.SynchronizedItemReaderBuilder;
+import org.springframework.batch.item.support.builder.SynchronizedItemStreamReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.dto.DailyStatsIdResponse;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
@@ -26,6 +32,7 @@ import statisticsservice.domain.weeklyStats.repository.WeeklyStatsRepository;
 import statisticsservice.global.dto.PageDto;
 
 import javax.sql.DataSource;
+import java.sql.Date;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.TemporalAdjusters;
@@ -47,9 +54,10 @@ public class WeeklyStatsBatchStep {
     public Step weeklyStatsStep(DataSource dataSource) {
         return new StepBuilder("weeklyStatsBatchStep", jobRepository)
                 .<DailyStatsIdResponse, WeeklyStats>chunk(100, platformTransactionManager)
-                .reader(weeklyItemReaderByCursor(null, dataSource))
+                .reader(weeklyItemReaderByCursorWithSynchro(null, dataSource))
                 .processor(weeklyStatsItemProcessor(null))
                 .writer(weeklyStatsItemWriterByJdbc())
+                .taskExecutor(weeklyStatsTaskExecutor())
                 .build();
     }
 
@@ -92,6 +100,24 @@ public class WeeklyStatsBatchStep {
 
     @Bean
     @StepScope
+    public SynchronizedItemStreamReader<DailyStatsIdResponse> weeklyItemReaderByCursorWithSynchro(@Value("#{jobParameters['date']}") LocalDate date, DataSource dataSource) {
+
+        JdbcCursorItemReader<DailyStatsIdResponse> weeklyCursorItemReader = new JdbcCursorItemReaderBuilder<DailyStatsIdResponse>()
+                .fetchSize(100)
+                .dataSource(dataSource)
+                .rowMapper(new BeanPropertyRowMapper<>(DailyStatsIdResponse.class))
+                .name("weeklyCursorItemReader")
+                .sql("select account_id, board_id from daily_stats where date = ?")
+                .queryArguments(Date.valueOf(date))
+                .build();
+
+        return new SynchronizedItemStreamReaderBuilder<DailyStatsIdResponse>()
+                .delegate(weeklyCursorItemReader)
+                .build();
+    }
+
+    @Bean
+    @StepScope
     public ItemProcessor<DailyStatsIdResponse, WeeklyStats> weeklyStatsItemProcessor(@Value("#{jobParameters['date']}") LocalDate date) {
 
         return item -> {
@@ -127,5 +153,15 @@ public class WeeklyStatsBatchStep {
     @StepScope
     public ItemWriter<WeeklyStats> weeklyStatsItemWriterByJdbc() {
         return chunk -> weeklyStatsJdbcRepository.batchInsertWeeklyStats(chunk.getItems());
+    }
+
+    @Bean
+    public TaskExecutor weeklyStatsTaskExecutor() {
+        ThreadPoolTaskExecutor taskExecutor = new ThreadPoolTaskExecutor();
+        taskExecutor.setCorePoolSize(4);
+        taskExecutor.setMaxPoolSize(8);
+        taskExecutor.setQueueCapacity(100);
+        taskExecutor.afterPropertiesSet();
+        return taskExecutor;
     }
 }
