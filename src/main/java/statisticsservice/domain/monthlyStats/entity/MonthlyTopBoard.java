@@ -19,7 +19,7 @@ import java.util.List;
 public class MonthlyTopBoard {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     @Column(name = "monthlyTopBoard_id")
     private Long id;
 

@@ -19,7 +19,7 @@ import java.util.List;
 public class DailyTopBoard {
 
     @Id
-    @GeneratedValue
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
     @Column(name = "dailyTopBoard_id")
     private Long id;
 

@@ -1,6 +1,5 @@
 package statisticsservice.domain.monthlyStats.batch.cloud.step;
 
-import com.zaxxer.hikari.HikariDataSource;
 import lombok.RequiredArgsConstructor;
 import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -22,6 +21,7 @@ import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
 import statisticsservice.domain.monthlyStats.entity.MonthlyStats;
+import statisticsservice.domain.monthlyStats.repository.MonthlyStatsJdbcRepository;
 import statisticsservice.domain.monthlyStats.repository.MonthlyStatsRepository;
 import statisticsservice.global.dto.PageDto;
 
@@ -40,14 +40,15 @@ public class MonthlyStatsBatchStep {
     private final DailyStatsRepository dailyStatsRepository;
     private final DailyStatsService dailyStatsService;
     private final MonthlyStatsRepository monthlyStatsRepository;
+    private final MonthlyStatsJdbcRepository monthlyStatsJdbcRepository;
 
     @Bean
     public Step monthlyStatsStep(DataSource dataSource) {
         return new StepBuilder("monthlyStatsBatchStep", jobRepository)
                 .<DailyStatsIdResponse, MonthlyStats>chunk(100, platformTransactionManager)
-                .reader(monthlyItemReader(null))
+                .reader(monthlyItemReaderByCursor(null, dataSource))
                 .processor(monthlyItemProcessor(null))
-                .writer(montlyStatsItemWriter())
+                .writer(monthlyStatsItemWriterByJdbc())
                 .build();
     }
 
@@ -117,7 +118,13 @@ public class MonthlyStatsBatchStep {
 
     @Bean
     @StepScope
-    public ItemWriter<MonthlyStats> montlyStatsItemWriter() {
+    public ItemWriter<MonthlyStats> monthlyStatsItemWriter() {
         return monthlyStatsRepository::saveAll;
+    }
+
+    @Bean
+    @StepScope
+    public ItemWriter<MonthlyStats> monthlyStatsItemWriterByJdbc() {
+        return chunk -> monthlyStatsJdbcRepository.batchInsertMonthlyStats(chunk.getItems());
     }
 }

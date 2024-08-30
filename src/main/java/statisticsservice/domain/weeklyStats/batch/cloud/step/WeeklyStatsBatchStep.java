@@ -21,6 +21,7 @@ import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
 import statisticsservice.domain.weeklyStats.entity.WeeklyStats;
+import statisticsservice.domain.weeklyStats.repository.WeeklyStatsJdbcRepository;
 import statisticsservice.domain.weeklyStats.repository.WeeklyStatsRepository;
 import statisticsservice.global.dto.PageDto;
 
@@ -40,14 +41,15 @@ public class WeeklyStatsBatchStep {
     private final DailyStatsRepository dailyStatsRepository;
     private final WeeklyStatsRepository weeklyStatsRepository;
     private final DailyStatsService dailyStatsService;
+    private final WeeklyStatsJdbcRepository weeklyStatsJdbcRepository;
 
     @Bean
     public Step weeklyStatsStep(DataSource dataSource) {
         return new StepBuilder("weeklyStatsBatchStep", jobRepository)
                 .<DailyStatsIdResponse, WeeklyStats>chunk(100, platformTransactionManager)
-                .reader(weeklyStatsItemReader(null))
+                .reader(weeklyItemReaderByCursor(null, dataSource))
                 .processor(weeklyStatsItemProcessor(null))
-                .writer(weeklyStatsItemWriter())
+                .writer(weeklyStatsItemWriterByJdbc())
                 .build();
     }
 
@@ -119,5 +121,11 @@ public class WeeklyStatsBatchStep {
     @StepScope
     public ItemWriter<WeeklyStats> weeklyStatsItemWriter() {
         return weeklyStatsRepository::saveAll;
+    }
+
+    @Bean
+    @StepScope
+    public ItemWriter<WeeklyStats> weeklyStatsItemWriterByJdbc() {
+        return chunk -> weeklyStatsJdbcRepository.batchInsertWeeklyStats(chunk.getItems());
     }
 }

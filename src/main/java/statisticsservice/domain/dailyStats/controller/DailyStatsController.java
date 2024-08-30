@@ -20,7 +20,6 @@ public class DailyStatsController {
     private final DailyStatsService dailyStatsService;
 
     @GetMapping("/revenue")
-    @Timed(value = "daily.batch", longTask = true)
     public ResponseEntity<DailyRevenueResponse> dailyRevenueDetails(@LoginId Long loginId, @RequestParam LocalDate date) {
 
         DailyRevenueResponse dailyRevenue = dailyStatsService.findDailyRevenue(loginId, date);

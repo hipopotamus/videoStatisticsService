@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
+import statisticsservice.domain.dailyStats.repository.DailyStatsJdbcRepository;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.statistics.service.RevenueService;
 import statisticsservice.external.videoservice.client.VideoServiceClient;
@@ -22,6 +23,7 @@ import statisticsservice.global.dto.PageDto;
 
 import java.time.LocalDate;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 @Configuration
@@ -33,14 +35,15 @@ public class DailyStatsBatchStep {
     private final VideoServiceClient videoServiceClient;
     private final DailyStatsRepository dailyStatsRepository;
     private final RevenueService revenueService;
+    private final DailyStatsJdbcRepository dailyStatsJdbcRepository;
 
     @Bean
     public Step dailyStatsStep() {
         return new StepBuilder("dailyStatsBatchStep", jobRepository)
                 .<BoardStatisticListResponse, DailyStats>chunk(100, platformTransactionManager)
-                .reader(boardStatisticsItemReader(null))
+                .reader(boardStatisticsItemReaderByCursor(null))
                 .processor(boardStatisticsItemProcessor(null))
-                .writer(dailyStatsItemWriter())
+                .writer(dailyStatsItemWriterByJdbc())
                 .build();
     }
 
@@ -61,6 +64,31 @@ public class DailyStatsBatchStep {
                     }
                     currentIterator = page.getContent().iterator();
                     currentPage++;
+                }
+
+                return currentIterator.hasNext() ? currentIterator.next() : null;
+            }
+        };
+    }
+
+    @Bean
+    @StepScope
+    public ItemReader<BoardStatisticListResponse> boardStatisticsItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+        return new ItemReader<>() {
+
+            private Iterator<BoardStatisticListResponse> currentIterator;
+            private final int limit = 100;
+            private long lastBoardId = 0;
+
+            @Override
+            public BoardStatisticListResponse read() {
+                if (currentIterator == null || !currentIterator.hasNext()) {
+                    List<BoardStatisticListResponse> responseList = videoServiceClient.boardStatisticsCursor(lastBoardId, limit);
+                    if (responseList == null || responseList.isEmpty()) {
+                        return null;
+                    }
+                    currentIterator = responseList.iterator();
+                    lastBoardId = responseList.getLast().getBoardId();
                 }
 
                 return currentIterator.hasNext() ? currentIterator.next() : null;
@@ -117,5 +145,11 @@ public class DailyStatsBatchStep {
     @StepScope
     public ItemWriter<DailyStats> dailyStatsItemWriter() {
         return dailyStatsRepository::saveAll;
+    }
+
+    @Bean
+    @StepScope
+    public ItemWriter<DailyStats> dailyStatsItemWriterByJdbc() {
+        return chunk -> dailyStatsJdbcRepository.batchInsertDailyStats(chunk.getItems());
     }
 }

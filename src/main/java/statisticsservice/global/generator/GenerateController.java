@@ -9,10 +9,7 @@ import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import statisticsservice.domain.dailyStats.batch.stock.DailyStatsBatchService;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
 import statisticsservice.domain.monthlyStats.batch.stock.MonthlyStatsBatchService;
@@ -31,14 +28,10 @@ import java.time.LocalDate;
 @RequiredArgsConstructor
 public class GenerateController {
 
-    private final JobLauncher jobLauncher;
-    private final JobRegistry jobRegistry;
-    private final DailyStatsBatchService dailyStatsBatchService;
-    private final MonthlyStatsBatchService monthlyStatsBatchService;
-    private final WeeklyStatsBatchService weeklyStatsBatchService;
+    private final GenerateService generateService;
 
     @PostMapping
-    @Timed(value = "batch.daily")
+    @Timed(value = "batch.total")
     public ResponseEntity<String> generateBatch(@RequestParam LocalDate today) {
 
         JobParameters jobParameters = new JobParametersBuilder()
@@ -46,9 +39,9 @@ public class GenerateController {
                 .toJobParameters();
 
         try {
-            dailyStats(today, jobParameters);
-            weeklyStats(jobParameters, today);
-            monthlyStats(jobParameters, today);
+            generateService.dailyStats(today, jobParameters);
+            generateService.weeklyStats(jobParameters, today);
+            generateService.monthlyStats(jobParameters, today);
         } catch (Exception e) {
             throw new BusinessLogicException(ExceptionCode.FAIL_BATCH);
         }
@@ -56,30 +49,8 @@ public class GenerateController {
         return new ResponseEntity<>("Success Batch", HttpStatus.OK);
     }
 
-    private void dailyStats(LocalDate today, JobParameters jobParameters) throws Exception {
-
-        JobExecution dailyStatsBatchJob = jobLauncher.run(jobRegistry.getJob("dailyStatsBatchJob"), jobParameters);
-        if (dailyStatsBatchJob.getStatus() != BatchStatus.COMPLETED) {
-            throw new BusinessLogicException(ExceptionCode.GLOBAL_EXCEPTION);
-        }
-        dailyStatsBatchService.addTopBoard(today);
-    }
-
-    private void weeklyStats(JobParameters jobParameters, LocalDate today) throws Exception {
-
-        JobExecution weeklyStatsBatchJob = jobLauncher.run(jobRegistry.getJob("weeklyStatsBatchJob"), jobParameters);
-        if (weeklyStatsBatchJob.getStatus() != BatchStatus.COMPLETED) {
-            throw new BusinessLogicException(ExceptionCode.GLOBAL_EXCEPTION);
-        }
-        weeklyStatsBatchService.addTopBoard(today);
-    }
-
-    private void monthlyStats(JobParameters jobParameters, LocalDate today) throws Exception {
-
-        JobExecution monthlyStatsBatchJob = jobLauncher.run(jobRegistry.getJob("monthlyStatsBatchJob"), jobParameters);
-        if (monthlyStatsBatchJob.getStatus() != BatchStatus.COMPLETED) {
-            throw new BusinessLogicException(ExceptionCode.GLOBAL_EXCEPTION);
-        }
-        monthlyStatsBatchService.addTopBoard(today);
+    @GetMapping
+    public String test() {
+        return "test";
     }
 }

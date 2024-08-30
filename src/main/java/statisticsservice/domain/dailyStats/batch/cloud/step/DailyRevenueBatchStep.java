@@ -15,6 +15,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.entity.DailyRevenue;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
+import statisticsservice.domain.dailyStats.repository.DailyRevenueJdbcRepository;
 import statisticsservice.domain.dailyStats.repository.DailyRevenueRepository;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.external.videoservice.client.VideoServiceClient;
@@ -34,14 +35,15 @@ public class DailyRevenueBatchStep {
     private final VideoServiceClient videoServiceClient;
     private final DailyStatsRepository dailyStatsRepository;
     private final DailyRevenueRepository dailyRevenueRepository;
+    private final DailyRevenueJdbcRepository dailyRevenueJdbcRepository;
 
     @Bean
     public Step dailyRevenueStep() {
         return new StepBuilder("dailyRevenueBatchStep", jobRepository)
                 .<AccountIdResponse, DailyRevenue>chunk(100, platformTransactionManager)
-                .reader(accountIdItemReader(null))
+                .reader(accountIdItemReaderByCursor(null))
                 .processor(accountIdItemProcessor(null))
-                .writer(dailyRevenueItemWriter())
+                .writer(dailyRevenueItemWriterByJdbc())
                 .build();
     }
 
@@ -62,6 +64,31 @@ public class DailyRevenueBatchStep {
                     }
                     currentIterator = page.getContent().iterator();
                     currentPage++;
+                }
+
+                return currentIterator.hasNext() ? currentIterator.next() : null;
+            }
+        };
+    }
+
+    @Bean
+    @StepScope
+    public ItemReader<AccountIdResponse> accountIdItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+        return new ItemReader<>() {
+
+            private Iterator<AccountIdResponse> currentIterator;
+            private final int limit = 100;
+            private long lastAccountId = 0;
+
+            @Override
+            public AccountIdResponse read() {
+                if (currentIterator == null || !currentIterator.hasNext()) {
+                    List<AccountIdResponse> responseList = videoServiceClient.accountIdCursor(lastAccountId, limit);
+                    if (responseList == null || responseList.isEmpty()) {
+                        return null;
+                    }
+                    currentIterator = responseList.iterator();
+                    lastAccountId = responseList.getLast().getAccountId();
                 }
 
                 return currentIterator.hasNext() ? currentIterator.next() : null;
@@ -93,5 +120,11 @@ public class DailyRevenueBatchStep {
     @StepScope
     public ItemWriter<DailyRevenue> dailyRevenueItemWriter() {
         return dailyRevenueRepository::saveAll;
+    }
+
+    @Bean
+    @StepScope
+    public ItemWriter<DailyRevenue> dailyRevenueItemWriterByJdbc() {
+        return chunk -> dailyRevenueJdbcRepository.batchInsertDailyStats(chunk.getItems());
     }
 }

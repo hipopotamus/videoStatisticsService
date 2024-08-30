@@ -19,7 +19,6 @@ public class WeeklyStatsJob {
     private final WeeklyStatsBatchStep weeklyStatsBatchStep;
 
     @Bean
-    @Timed(value = "batch.weekly.stats")
     public Job weeklyStatsBatchJob(DataSource dataSource) {
         return new JobBuilder("weeklyStatsBatchJob", jobRepository)
                 .start(weeklyStatsBatchStep.weeklyStatsStep(dataSource))

@@ -19,7 +19,6 @@ public class DailyStatsJob {
     private final DailyRevenueBatchStep dailyRevenueBatchStep;
 
     @Bean
-    @Timed(value = "batch.daily.stats")
     public Job dailyStatsBatchJob() {
         return new JobBuilder("dailyStatsBatchJob", jobRepository)
                 .start(dailyStatsBatchStep.dailyStatsStep())
