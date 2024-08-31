@@ -23,6 +23,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.dto.DailyStatsIdResponse;
+import statisticsservice.domain.dailyStats.dto.SumOfStats;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
@@ -49,11 +50,12 @@ public class WeeklyStatsBatchStep {
     private final WeeklyStatsRepository weeklyStatsRepository;
     private final DailyStatsService dailyStatsService;
     private final WeeklyStatsJdbcRepository weeklyStatsJdbcRepository;
+    private final int chunkSize = 100;
 
     @Bean
     public Step weeklyStatsStep(DataSource dataSource) {
         return new StepBuilder("weeklyStatsBatchStep", jobRepository)
-                .<DailyStatsIdResponse, WeeklyStats>chunk(100, platformTransactionManager)
+                .<DailyStatsIdResponse, WeeklyStats>chunk(chunkSize, platformTransactionManager)
                 .reader(weeklyItemReaderByCursorWithSynchro(null, dataSource))
                 .processor(weeklyStatsItemProcessor(null))
                 .writer(weeklyStatsItemWriterByJdbc())
@@ -103,7 +105,7 @@ public class WeeklyStatsBatchStep {
     public SynchronizedItemStreamReader<DailyStatsIdResponse> weeklyItemReaderByCursorWithSynchro(@Value("#{jobParameters['date']}") LocalDate date, DataSource dataSource) {
 
         JdbcCursorItemReader<DailyStatsIdResponse> weeklyCursorItemReader = new JdbcCursorItemReaderBuilder<DailyStatsIdResponse>()
-                .fetchSize(100)
+                .fetchSize(chunkSize)
                 .dataSource(dataSource)
                 .rowMapper(new BeanPropertyRowMapper<>(DailyStatsIdResponse.class))
                 .name("weeklyCursorItemReader")
@@ -122,22 +124,22 @@ public class WeeklyStatsBatchStep {
 
         return item -> {
 
-            long views = 0;
-            long playtime = 0;
+//            long views = 0;
+//            long playtime = 0;
 
             LocalDate start = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            List<DailyStats> weeklyDataList = dailyStatsRepository.findBetweenDates(item.getBoardId(), start, date);
+            SumOfStats totalViewsAndPlaytime = dailyStatsRepository.findTotalViewsAndPlaytime(item.getBoardId(), start, date);
 
-            for (DailyStats dailyStats : weeklyDataList) {
-                views += dailyStats.getViews();
-                playtime += dailyStats.getPlaytime();
-            }
+//            for (DailyStats dailyStats : weeklyDataList) {
+//                views += dailyStats.getViews();
+//                playtime += dailyStats.getPlaytime();
+//            }
 
             return WeeklyStats.builder()
                     .accountId(item.getAccountId())
                     .boardId(item.getBoardId())
-                    .views(views)
-                    .playtime(playtime)
+                    .views(totalViewsAndPlaytime.getTotalViews())
+                    .playtime(totalViewsAndPlaytime.getTotalPlaytime())
                     .date(date)
                     .build();
         };

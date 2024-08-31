@@ -10,9 +10,7 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
-import org.springframework.batch.item.support.SynchronizedItemReader;
 import org.springframework.batch.item.support.SynchronizedItemStreamReader;
-import org.springframework.batch.item.support.builder.SynchronizedItemReaderBuilder;
 import org.springframework.batch.item.support.builder.SynchronizedItemStreamReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,6 +21,7 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.dto.DailyStatsIdResponse;
+import statisticsservice.domain.dailyStats.dto.SumOfStats;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
@@ -121,22 +120,22 @@ public class MonthlyStatsBatchStep {
 
         return item -> {
 
-            long views = 0;
-            long playtime = 0;
+//            long views = 0;
+//            long playtime = 0;
 
             LocalDate start = date.with(TemporalAdjusters.firstDayOfMonth());
-            List<DailyStats> monthlyDataList = dailyStatsRepository.findBetweenDates(item.getBoardId(), start, date);
+            SumOfStats totalViewsAndPlaytime = dailyStatsRepository.findTotalViewsAndPlaytime(item.getBoardId(), start, date);
 
-            for (DailyStats dailyStats : monthlyDataList) {
-                views += dailyStats.getViews();
-                playtime += dailyStats.getPlaytime();
-            }
+//            for (DailyStats dailyStats : monthlyDataList) {
+//                views += dailyStats.getViews();
+//                playtime += dailyStats.getPlaytime();
+//            }
 
             return MonthlyStats.builder()
                     .accountId(item.getAccountId())
                     .boardId(item.getBoardId())
-                    .views(views)
-                    .playtime(playtime)
+                    .views(totalViewsAndPlaytime.getTotalViews())
+                    .playtime(totalViewsAndPlaytime.getTotalPlaytime())
                     .date(date)
                     .build();
         };
