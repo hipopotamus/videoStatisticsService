@@ -10,9 +10,7 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
-import org.springframework.batch.item.support.SynchronizedItemReader;
 import org.springframework.batch.item.support.SynchronizedItemStreamReader;
-import org.springframework.batch.item.support.builder.SynchronizedItemReaderBuilder;
 import org.springframework.batch.item.support.builder.SynchronizedItemStreamReaderBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -23,7 +21,6 @@ import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 import statisticsservice.domain.dailyStats.dto.DailyStatsIdResponse;
-import statisticsservice.domain.dailyStats.dto.SumOfStats;
 import statisticsservice.domain.dailyStats.entity.DailyStats;
 import statisticsservice.domain.dailyStats.repository.DailyStatsRepository;
 import statisticsservice.domain.dailyStats.service.DailyStatsService;
@@ -124,22 +121,22 @@ public class WeeklyStatsBatchStep {
 
         return item -> {
 
-//            long views = 0;
-//            long playtime = 0;
+            long views = 0;
+            long playtime = 0;
 
             LocalDate start = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-            SumOfStats totalViewsAndPlaytime = dailyStatsRepository.findTotalViewsAndPlaytime(item.getBoardId(), start, date);
+            List<DailyStats> weeklyDataList = dailyStatsRepository.findBetweenDates(item.getBoardId(), start, date);
 
-//            for (DailyStats dailyStats : weeklyDataList) {
-//                views += dailyStats.getViews();
-//                playtime += dailyStats.getPlaytime();
-//            }
+            for (DailyStats dailyStats : weeklyDataList) {
+                views += dailyStats.getViews();
+                playtime += dailyStats.getPlaytime();
+            }
 
             return WeeklyStats.builder()
                     .accountId(item.getAccountId())
                     .boardId(item.getBoardId())
-                    .views(totalViewsAndPlaytime.getTotalViews())
-                    .playtime(totalViewsAndPlaytime.getTotalPlaytime())
+                    .views(views)
+                    .playtime(playtime)
                     .date(date)
                     .build();
         };

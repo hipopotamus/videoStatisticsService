@@ -54,7 +54,7 @@ public class DailyStatsBatchStep {
 
     @Bean
     @StepScope
-    public ItemReader<BoardStatisticListResponse> boardStatisticsItemReader(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public ItemReader<BoardStatisticListResponse> boardStatisticsItemReader(@Value("#{jobParameters['date']}") LocalDate date) {
         return new ItemReader<>() {
 
             private Iterator<BoardStatisticListResponse> currentIterator;
@@ -78,7 +78,7 @@ public class DailyStatsBatchStep {
 
     @Bean
     @StepScope
-    public ItemReader<BoardStatisticListResponse> boardStatisticsItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public ItemReader<BoardStatisticListResponse> boardStatisticsItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate date) {
         return new ItemReader<>() {
 
             private Iterator<BoardStatisticListResponse> currentIterator;
@@ -103,7 +103,7 @@ public class DailyStatsBatchStep {
 
     @Bean
     @StepScope
-    public SynchronizedItemReader<BoardStatisticListResponse> boardStatisticsItemReaderByCursorWithSynchro(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public SynchronizedItemReader<BoardStatisticListResponse> boardStatisticsItemReaderByCursorWithSynchro(@Value("#{jobParameters['date']}") LocalDate date) {
         ItemReader<BoardStatisticListResponse> itemReader = new ItemReader<>() {
 
             private Iterator<BoardStatisticListResponse> currentIterator;
@@ -132,7 +132,7 @@ public class DailyStatsBatchStep {
 
     @Bean
     @StepScope
-    public ItemProcessor<BoardStatisticListResponse, DailyStats> boardStatisticsItemProcessor(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public ItemProcessor<BoardStatisticListResponse, DailyStats> boardStatisticsItemProcessor(@Value("#{jobParameters['date']}") LocalDate date) {
 
         return item -> {
 
@@ -141,7 +141,7 @@ public class DailyStatsBatchStep {
             long playtime = 0;
 
             Optional<DailyStats> optionalDailyStats =
-                    dailyStatsRepository.findByBoardIdAndDate(item.getBoardId(), currentDate.minusDays(1));
+                    dailyStatsRepository.findByBoardIdAndDate(item.getBoardId(), date.minusDays(1));
 
             if (optionalDailyStats.isEmpty()) {
                 views = item.getViews();
@@ -170,7 +170,7 @@ public class DailyStatsBatchStep {
                     .videoRevenue(videoRevenue)
                     .adVideoRevenue(adVideoRevenue)
                     .revenue(videoRevenue + adVideoRevenue)
-                    .date(currentDate)
+                    .date(date)
                     .build();
         };
     }

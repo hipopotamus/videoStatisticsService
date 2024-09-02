@@ -54,7 +54,7 @@ public class DailyRevenueBatchStep {
 
     @Bean
     @StepScope
-    public ItemReader<AccountIdResponse> accountIdItemReader(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public ItemReader<AccountIdResponse> accountIdItemReader(@Value("#{jobParameters['date']}") LocalDate date) {
         return new ItemReader<>() {
 
             private Iterator<AccountIdResponse> currentIterator;
@@ -78,7 +78,7 @@ public class DailyRevenueBatchStep {
 
     @Bean
     @StepScope
-    public ItemReader<AccountIdResponse> accountIdItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public ItemReader<AccountIdResponse> accountIdItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate date) {
         return new ItemReader<>() {
 
             private Iterator<AccountIdResponse> currentIterator;
@@ -103,7 +103,7 @@ public class DailyRevenueBatchStep {
 
     @Bean
     @StepScope
-    public SynchronizedItemReader<AccountIdResponse> accountIdItemReaderByCursorWithSynchro(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public SynchronizedItemReader<AccountIdResponse> accountIdItemReaderByCursorWithSynchro(@Value("#{jobParameters['date']}") LocalDate date) {
         ItemReader<AccountIdResponse> itemReader = new ItemReader<>() {
 
             private Iterator<AccountIdResponse> currentIterator;
@@ -132,10 +132,10 @@ public class DailyRevenueBatchStep {
 
     @Bean
     @StepScope
-    public ItemProcessor<AccountIdResponse, DailyRevenue> accountIdItemProcessor(@Value("#{jobParameters['date']}") LocalDate currentDate) {
+    public ItemProcessor<AccountIdResponse, DailyRevenue> accountIdItemProcessor(@Value("#{jobParameters['date']}") LocalDate date) {
         return item -> {
 
-            List<DailyStats> dailyStatsList = dailyStatsRepository.findByAccountIdAndDate(item.getAccountId(), currentDate);
+            List<DailyStats> dailyStatsList = dailyStatsRepository.findByAccountIdAndDate(item.getAccountId(), date);
 
             double totalRevenue = 0;
             for (DailyStats dailyStats : dailyStatsList) {
@@ -144,7 +144,7 @@ public class DailyRevenueBatchStep {
 
             return DailyRevenue.builder()
                     .accountId(item.getAccountId())
-                    .date(currentDate)
+                    .date(date)
                     .revenue(totalRevenue)
                     .build();
         };
