@@ -40,11 +40,12 @@ public class DailyStatsBatchStep {
     private final DailyStatsRepository dailyStatsRepository;
     private final RevenueService revenueService;
     private final DailyStatsJdbcRepository dailyStatsJdbcRepository;
+    private final int chunkSize = 100;
 
     @Bean
     public Step dailyStatsStep() {
         return new StepBuilder("dailyStatsBatchStep", jobRepository)
-                .<BoardStatisticListResponse, DailyStats>chunk(100, platformTransactionManager)
+                .<BoardStatisticListResponse, DailyStats>chunk(chunkSize, platformTransactionManager)
                 .reader(boardStatisticsItemReaderByCursorWithSynchro(null))
                 .processor(boardStatisticsItemProcessor(null))
                 .writer(dailyStatsItemWriterByJdbc())
@@ -63,7 +64,7 @@ public class DailyStatsBatchStep {
             @Override
             public BoardStatisticListResponse read() {
                 if (currentIterator == null || !currentIterator.hasNext()) {
-                    PageDto<BoardStatisticListResponse> page = videoServiceClient.boardStatisticsList(PageRequest.of(currentPage, 100));
+                    PageDto<BoardStatisticListResponse> page = videoServiceClient.boardStatisticsList(PageRequest.of(currentPage, chunkSize));
                     if (page == null || page.getContent().isEmpty()) {
                         return null;
                     }
@@ -82,13 +83,12 @@ public class DailyStatsBatchStep {
         return new ItemReader<>() {
 
             private Iterator<BoardStatisticListResponse> currentIterator;
-            private final int limit = 100;
             private long lastBoardId = 0;
 
             @Override
             public BoardStatisticListResponse read() {
                 if (currentIterator == null || !currentIterator.hasNext()) {
-                    List<BoardStatisticListResponse> responseList = videoServiceClient.boardStatisticsCursor(lastBoardId, limit);
+                    List<BoardStatisticListResponse> responseList = videoServiceClient.boardStatisticsCursor(lastBoardId, chunkSize);
                     if (responseList == null || responseList.isEmpty()) {
                         return null;
                     }
@@ -107,13 +107,12 @@ public class DailyStatsBatchStep {
         ItemReader<BoardStatisticListResponse> itemReader = new ItemReader<>() {
 
             private Iterator<BoardStatisticListResponse> currentIterator;
-            private final int limit = 100;
             private long lastBoardId = 0;
 
             @Override
             public BoardStatisticListResponse read() {
                 if (currentIterator == null || !currentIterator.hasNext()) {
-                    List<BoardStatisticListResponse> responseList = videoServiceClient.boardStatisticsCursor(lastBoardId, limit);
+                    List<BoardStatisticListResponse> responseList = videoServiceClient.boardStatisticsCursor(lastBoardId, chunkSize);
                     if (responseList == null || responseList.isEmpty()) {
                         return null;
                     }

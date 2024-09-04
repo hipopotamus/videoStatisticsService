@@ -46,11 +46,12 @@ public class MonthlyStatsBatchStep {
     private final DailyStatsService dailyStatsService;
     private final MonthlyStatsRepository monthlyStatsRepository;
     private final MonthlyStatsJdbcRepository monthlyStatsJdbcRepository;
+    private final int chunkSize = 100;
 
     @Bean
     public Step monthlyStatsStep(DataSource dataSource) {
         return new StepBuilder("monthlyStatsBatchStep", jobRepository)
-                .<DailyStatsIdResponse, MonthlyStats>chunk(100, platformTransactionManager)
+                .<DailyStatsIdResponse, MonthlyStats>chunk(chunkSize, platformTransactionManager)
                 .reader(monthlyItemReaderByCursorWithSynchro(null, dataSource))
                 .processor(monthlyItemProcessor(null))
                 .writer(monthlyStatsItemWriterByJdbc())
@@ -69,7 +70,7 @@ public class MonthlyStatsBatchStep {
             @Override
             public DailyStatsIdResponse read() {
                 if (currentIterator == null || !currentIterator.hasNext()) {
-                    PageDto<DailyStatsIdResponse> page = dailyStatsService.findDailyStatsList(PageRequest.of(currentPage, 100), date);
+                    PageDto<DailyStatsIdResponse> page = dailyStatsService.findDailyStatsList(PageRequest.of(currentPage, chunkSize), date);
                     if (page == null || page.getContent().isEmpty()) {
                         return null;
                     }
@@ -86,7 +87,7 @@ public class MonthlyStatsBatchStep {
     @StepScope
     public JdbcCursorItemReader<DailyStatsIdResponse> monthlyItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate date, DataSource dataSource) {
         return new JdbcCursorItemReaderBuilder<DailyStatsIdResponse>()
-                .fetchSize(100)
+                .fetchSize(chunkSize)
                 .dataSource(dataSource)
                 .rowMapper(new BeanPropertyRowMapper<>(DailyStatsIdResponse.class))
                 .name("monthlyCursorItemReader")
@@ -100,7 +101,7 @@ public class MonthlyStatsBatchStep {
     public SynchronizedItemStreamReader<DailyStatsIdResponse> monthlyItemReaderByCursorWithSynchro(@Value("#{jobParameters['date']}") LocalDate date, DataSource dataSource) {
 
         JdbcCursorItemReader<DailyStatsIdResponse> monthlyCursorItemReader = new JdbcCursorItemReaderBuilder<DailyStatsIdResponse>()
-                .fetchSize(100)
+                .fetchSize(chunkSize)
                 .dataSource(dataSource)
                 .rowMapper(new BeanPropertyRowMapper<>(DailyStatsIdResponse.class))
                 .name("monthlyCursorItemReader")

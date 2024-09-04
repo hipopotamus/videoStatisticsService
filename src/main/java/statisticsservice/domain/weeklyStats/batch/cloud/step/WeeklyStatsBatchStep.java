@@ -88,7 +88,7 @@ public class WeeklyStatsBatchStep {
     @StepScope
     public JdbcCursorItemReader<DailyStatsIdResponse> weeklyItemReaderByCursor(@Value("#{jobParameters['date']}") LocalDate date, DataSource dataSource) {
         return new JdbcCursorItemReaderBuilder<DailyStatsIdResponse>()
-                .fetchSize(100)
+                .fetchSize(chunkSize)
                 .dataSource(dataSource)
                 .rowMapper(new BeanPropertyRowMapper<>(DailyStatsIdResponse.class))
                 .name("weeklyCursorItemReader")

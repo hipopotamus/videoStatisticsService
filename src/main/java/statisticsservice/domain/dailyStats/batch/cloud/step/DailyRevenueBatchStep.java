@@ -40,11 +40,12 @@ public class DailyRevenueBatchStep {
     private final DailyStatsRepository dailyStatsRepository;
     private final DailyRevenueRepository dailyRevenueRepository;
     private final DailyRevenueJdbcRepository dailyRevenueJdbcRepository;
+    private final int chunkSize = 100;
 
     @Bean
     public Step dailyRevenueStep() {
         return new StepBuilder("dailyRevenueBatchStep", jobRepository)
-                .<AccountIdResponse, DailyRevenue>chunk(100, platformTransactionManager)
+                .<AccountIdResponse, DailyRevenue>chunk(chunkSize, platformTransactionManager)
                 .reader(accountIdItemReaderByCursorWithSynchro(null))
                 .processor(accountIdItemProcessor(null))
                 .writer(dailyRevenueItemWriterByJdbc())
@@ -63,7 +64,7 @@ public class DailyRevenueBatchStep {
             @Override
             public AccountIdResponse read() {
                 if (currentIterator == null || !currentIterator.hasNext()) {
-                    PageDto<AccountIdResponse> page = videoServiceClient.accountList(PageRequest.of(currentPage, 100));
+                    PageDto<AccountIdResponse> page = videoServiceClient.accountList(PageRequest.of(currentPage, chunkSize));
                     if (page == null || page.getContent().isEmpty()) {
                         return null;
                     }
@@ -82,13 +83,12 @@ public class DailyRevenueBatchStep {
         return new ItemReader<>() {
 
             private Iterator<AccountIdResponse> currentIterator;
-            private final int limit = 100;
             private long lastAccountId = 0;
 
             @Override
             public AccountIdResponse read() {
                 if (currentIterator == null || !currentIterator.hasNext()) {
-                    List<AccountIdResponse> responseList = videoServiceClient.accountIdCursor(lastAccountId, limit);
+                    List<AccountIdResponse> responseList = videoServiceClient.accountIdCursor(lastAccountId, chunkSize);
                     if (responseList == null || responseList.isEmpty()) {
                         return null;
                     }
@@ -107,13 +107,12 @@ public class DailyRevenueBatchStep {
         ItemReader<AccountIdResponse> itemReader = new ItemReader<>() {
 
             private Iterator<AccountIdResponse> currentIterator;
-            private final int limit = 100;
             private long lastAccountId = 0;
 
             @Override
             public AccountIdResponse read() {
                 if (currentIterator == null || !currentIterator.hasNext()) {
-                    List<AccountIdResponse> responseList = videoServiceClient.accountIdCursor(lastAccountId, limit);
+                    List<AccountIdResponse> responseList = videoServiceClient.accountIdCursor(lastAccountId, chunkSize);
                     if (responseList == null || responseList.isEmpty()) {
                         return null;
                     }
