@@ -57,6 +57,9 @@ public class WeeklyStatsBatchStep {
                 .processor(weeklyStatsItemProcessor(null))
                 .writer(weeklyStatsItemWriterByJdbc())
                 .taskExecutor(weeklyStatsTaskExecutor())
+                .faultTolerant()
+                .retry(Exception.class)
+                .retryLimit(3)
                 .build();
     }
 

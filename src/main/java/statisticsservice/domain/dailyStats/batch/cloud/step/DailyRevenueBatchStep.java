@@ -50,6 +50,9 @@ public class DailyRevenueBatchStep {
                 .processor(accountIdItemProcessor(null))
                 .writer(dailyRevenueItemWriterByJdbc())
                 .taskExecutor(dailyRevenueTaskExecutor())
+                .faultTolerant()
+                .retry(Exception.class)
+                .retryLimit(3)
                 .build();
     }
 

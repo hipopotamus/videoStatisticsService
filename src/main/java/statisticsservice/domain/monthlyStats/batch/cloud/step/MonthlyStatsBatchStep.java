@@ -56,6 +56,9 @@ public class MonthlyStatsBatchStep {
                 .processor(monthlyItemProcessor(null))
                 .writer(monthlyStatsItemWriterByJdbc())
                 .taskExecutor(monthlyStatsTaskExecutor())
+                .faultTolerant()
+                .retry(Exception.class)
+                .retryLimit(3)
                 .build();
     }
 

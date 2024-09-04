@@ -50,6 +50,9 @@ public class DailyStatsBatchStep {
                 .processor(boardStatisticsItemProcessor(null))
                 .writer(dailyStatsItemWriterByJdbc())
                 .taskExecutor(dailyStatsTaskExecutor())
+                .faultTolerant()
+                .retry(Exception.class)
+                .retryLimit(3)
                 .build();
     }
 
