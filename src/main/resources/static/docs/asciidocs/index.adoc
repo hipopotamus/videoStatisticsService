@@ -1,4 +1,4 @@
-= VideoService
+= VideoStatisticService
 :sectnums:
 :toc: left
 :toclevels: 2
